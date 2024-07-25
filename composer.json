@@ -1,0 +1,19 @@
+{
+  "require": {
+    "php": ">=7.2",
+    "ext-mbstring": "*",
+    "ext-json": "*",
+    "ext-pdo": "*",
+    "ext-curl": "*",
+    "ext-iconv": "*",
+    "ext-simplexml": "*",
+    "ext-openssl": "*",
+    "ext-fileinfo": "*",
+    "ext-gd": "*",
+    "ext-zip": "*",
+    "phpseclib/phpseclib": "~3.0",
+    "firebase/php-jwt": "^6.3",
+    "psr/log": "^2.0.0",
+    "phpoffice/phpspreadsheet": "^1.29"
+  }
+}

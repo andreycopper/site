@@ -1,0 +1,66 @@
+AddDefaultCharset utf-8
+AddCharset utf-8 *
+
+<IfModule mod_charset.c>
+CharsetSourceEnc utf-8
+CharsetDefault utf-8
+</IfModule>
+
+RewriteEngine On
+RewriteCond %{HTTP:Authorization} ^(.+)$
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+RewriteEngine on
+   # Разрешает переход по символическим ссылкам
+   Options +FollowSymLinks
+   # запретить отображение ошибок (требование монитора качества) - разрешить на время разработки
+   #php_flag display_errors on
+   # запретить  использовать удаленные файлы (требование проактивной защиты)
+   #php_flag allow_url_fopen off
+
+   # 1. Удалить www
+   RewriteCond %{ENV:HTTPS} on
+   #Если включен https
+   RewriteRule .* - [E=SSL:s]
+   #То создаем переменную  ssl с текстом s
+   RewriteCond %{HTTP_HOST} ^www\.(.*) [NC]
+   # Проверяем, содержит ли домен www в начале URL.
+   RewriteRule ^(.*)$ http%{ENV:SSL}://%1/$1 [R=301,L]
+   # Перенаправляем удаляем www
+
+   # Проверяем, повторяется ли слеш (//) более двух раз.
+   RewriteCond %{THE_REQUEST} //
+   # Убедимся что это не урл в  GET
+   RewriteCond %{QUERY_STRING} !http(s|)://
+   # Исключаем все лишние слеши.
+   RewriteRule .* /$0 [R=301,L]
+
+   # Если файл содержит точку.
+#   RewriteCond %{REQUEST_URI} \..+$
+   # И это не директория.
+#   RewriteCond %{REQUEST_FILENAME} !-d
+   # Является файлом.
+#   RewriteCond %{REQUEST_FILENAME} -f
+   # И в конце URL есть слеш.
+#   RewriteCond %{REQUEST_URI} ^(.+)/$
+   # Исключить слеш.
+#   RewriteRule ^(.+)/$ /$1 [R=301,L]
+
+   # Если слеша в конце нет.
+   RewriteCond %{REQUEST_URI} !(.*)/$
+   # Не является файлом.
+   RewriteCond %{REQUEST_FILENAME} !-f
+   # В URL нет точки (файл).
+   RewriteCond %{REQUEST_URI} !\..+$
+   # В URL есть хоть один символы
+   RewriteCond %{REQUEST_URI} ^(.+)$
+   # Добавляем слеш в конце.
+#   RewriteRule ^(.*)$ $1/ [R=301,L]
+   RewriteRule ^(.*)([^/])$ /$1$2/ [L,R=301]
+
+   RewriteCond %{REQUEST_FILENAME} !-f
+   RewriteCond %{REQUEST_FILENAME} !-d
+   RewriteCond %{REQUEST_FILENAME} !-l
+   RewriteRule ^(.*)$ index.php [QSA,L]
+
+Options All -Indexes

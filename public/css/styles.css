@@ -1,0 +1,34 @@
+@import "reset.css";
+@import "common.css";
+@import "fonts.css";
+body {
+    min-width: 300px;
+    min-height: 100vh;
+    font-family: 'OpenSansRegular', serif;
+}
+.container {
+    width: 90%;
+}
+.center-block {
+    width: 600px;
+}
+/* ERROR */
+#error {
+    position: fixed;
+    top: 100px;
+    right: -300px;
+    width: 300px;
+    padding: 1rem !important;
+    background-color: var(--bs-body-bg);
+    border: 2px var(--bs-border-style) #ef476f !important;
+    border-radius: var(--bs-border-radius-lg) !important;
+    transition: right 2s;
+    color: #ef476f;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    z-index: 2;
+}
+#error.show {
+    right: 10px;
+}

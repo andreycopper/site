@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /auth/
+Disallow: /messages/
+Disallow: /friends/
+
+User-agent: *
+Allow: /

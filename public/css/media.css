@@ -1,0 +1,33 @@
+@media (min-width: 1500px) {
+
+}
+
+@media (min-width: 1200px) and (max-width: 1499px) {
+
+}
+
+@media (min-width: 992px) and (max-width: 1199px) {
+
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+    .center-block {
+        width: 500px;
+    }
+}
+
+@media (max-width: 767px) {
+    .center-block {
+        width: 400px;
+    }
+}
+
+@media (max-width: 480px) {
+    .center-block {
+        width: 300px;
+    }
+}
+
+@media (max-width: 320px) {
+
+}
