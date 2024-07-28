@@ -18,8 +18,20 @@ class ValidationEvent extends Validation
     {
         if (empty($event)) throw new UserException(ModelUserEvent::EVENT_DOESNT_EXIST);
         if (!$event->isActive()) throw new UserException(ModelUserEvent::CODE_ALREADY_ACTIVATED);
-        if ($event->getExpire() < new DateTime()) throw new UserException(ModelUserEvent::EVENT_ALREADY_EXPIRED);
-        if (empty($event->getEmail()) && empty($event->getUser())) throw new UserException(ModelUserEvent::EVENT_EMAIL_EMPTY);
+        if ($event->getExpire() < new DateTime()) throw new UserException(ModelUserEvent::CODE_ALREADY_EXPIRED);
+        if (empty($event->getUser()) || empty($event->getUser()->getEmail())) throw new UserException(ModelUserEvent::EVENT_EMAIL_EMPTY);
+        return true;
+    }
+
+    /**
+     * Check user event not exist
+     * @param ?Event $event - event
+     * @return bool
+     * @throws UserException
+     */
+    public static function isEventNotExist(?Event $event): bool
+    {
+        if (!empty($event) && !empty($event->getCreated())) throw new UserException(ModelUserEvent::CODE_ALREADY_SENT);
         return true;
     }
 
@@ -43,7 +55,7 @@ class ValidationEvent extends Validation
      */
     public static function isEventNotSend(?Event $event): bool
     {
-        if (!empty($event->getSend())) throw new UserException(ModelUserEvent::EVENT_ALREADY_SENT);
+        if (!empty($event->getSend()) && $event->getSend() > new DateTime()) throw new UserException(ModelUserEvent::EVENT_ALREADY_SENT);
         return true;
     }
 }

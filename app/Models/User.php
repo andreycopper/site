@@ -17,7 +17,7 @@ class User extends Model
     const LOGIN_EXIST = 'This login is already registered';
     const LOGIN_EMPTY = 'This login is empty';
     const EMAIL_EXIST = 'This email is already registered';
-    const USER_NOT_SAVED = 'User wasn\'t saved';
+    const USER_NOT_SAVED = 'User haven\'t been saved';
     const USER_NOT_CRYPT_KEY = 'Encryption keys weren\'t generated';
     const USER_NOT_WELCOME = 'Greeting wasn\'t sent';
     const USER_NOT_SENT_CONFIRM = 'Verification code wasn\'t sent';
@@ -210,8 +210,8 @@ class User extends Model
                 u.id, u.active, u.blocked, ub.id block_id, u.group_id, u.login, u.password, u.email, u.show_email, 
                 u.phone, u.show_phone, u.name, u.second_name, u.last_name, u.gender_id, u.personal_data_agreement, 
                 u.mailing, u.mailing_type_id, u.timezone, u.created, u.updated 
-            FROM {$prefix}site.user_sessions us 
-            LEFT JOIN {$prefix}{$table} u ON us.login = u.login 
+            FROM {$prefix}{$table} u 
+            LEFT JOIN {$prefix}site.user_sessions us ON us.user_id = u.id 
             LEFT JOIN {$prefix}site.user_groups ug ON u.group_id = ug.id 
             LEFT JOIN {$prefix}site.user_blocks ub ON u.id = ub.user_id AND ub.expire > NOW() 
             WHERE us.token = :token {$active}
@@ -237,10 +237,30 @@ class User extends Model
     /**
      * Current token
      * @return ?string
+     * @throws ReflectionException
      */
     public static function getToken(): ?string
     {
-        return !empty($_SESSION['token']) ? $_SESSION['token'] : (!empty($_COOKIE['token']) ? $_COOKIE['token'] : null);
+        return !empty($_SESSION['token']) ? $_SESSION['token'] : (!empty($_COOKIE['user']) ? self::getTokenByCookie() : null);
+    }
+
+    /**
+     * Current token by cookie
+     * @return ?string
+     * @throws ReflectionException
+     */
+    private static function getTokenByCookie(): ?string
+    {
+        $session = EntityUser\Session::factory(['cookie' => $_COOKIE['user']]);
+
+        if (!empty($session) && !empty($session->getToken())) {
+            $_SESSION['token'] = $session->getToken();
+            return self::getToken();
+        }
+        else {
+            Auth::logout();
+            return null;
+        }
     }
 
     /**

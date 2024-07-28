@@ -32,7 +32,7 @@ class Auth extends Controller
     {
         if (Request::isPost()) {
             ValidationForm::isValidAuthForm(Request::post());
-            (new SystemAuth(Request::post('email'), Request::post('password')))->auth();
+            (new SystemAuth(Request::post('email'), Request::post('password'), !empty(Request::post('remember'))))->auth();
         }
     }
 }

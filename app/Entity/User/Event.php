@@ -2,14 +2,13 @@
 namespace Entity\User;
 
 use DateTime;
-use Entity\Entity;
 use Entity\User;
 use Utils\Mailer;
-use Utils\Data;
-use Utils\Data\ValidationEvent;
+use Entity\Entity;
 use ReflectionException;
 use Exceptions\UserException;
 use Exceptions\MailException;
+use Utils\Data\ValidationEvent;
 use Models\User\Event as ModelUserEvent;
 
 class Event extends Entity
@@ -19,9 +18,8 @@ class Event extends Entity
     private ?int $id = null;
     private bool $active = true;
     private ?User $user = null;
-    private ?string $email = null;
     private EventTemplate $eventTemplate;
-    private string $code;
+    private ?string $code = null;
     private array $params;
     private DateTime $expire;
     private ?DateTime $send = null;
@@ -31,19 +29,20 @@ class Event extends Entity
     /**
      * New user event
      * @param int $templateId - template id
-     * @param ?int $userId - user id
+     * @param ?User $user - user id
      * @param ?array $params - params
      * @throws ReflectionException
      */
-    public function __construct(int $templateId = ModelUserEvent::TEMPLATE_INVITATION, ?int $userId = null, ?array $params = [])
+    public function __construct(int $templateId = ModelUserEvent::TEMPLATE_EMAIL_CONFIRM, ?User $user = null, ?array $params = [])
     {
-        $this->user = User::factory(['id' => $userId, 'active' => false]);
-        if (!empty($params['user_email'])) $this->email = $params['user_email'];
+        if (!empty($user)) $this->user = $user;
         $this->eventTemplate = EventTemplate::factory(['id' => $templateId]);
-        $this->code = sha1(time()) . md5(time());
         $this->params = $params;
         $this->expire = (new DateTime())->modify('+1 day');
         $this->created = new DateTime();
+
+        if (in_array($templateId, [ModelUserEvent::TEMPLATE_EMAIL_CONFIRM, ModelUserEvent::TEMPLATE_PASSWORD_RECOVERY]))
+            $this->code = sha1(time()) . md5(time());
     }
 
     /**
@@ -56,7 +55,6 @@ class Event extends Entity
             'id'                     => ['type' => 'int',                'field' => 'id'],
             'active'                 => ['type' => 'bool',               'field' => 'active'],
             'user_id'                => ['type' => 'User',               'field' => 'user'],
-            'email'                  => ['type' => 'string',             'field' => 'email'],
             'user_event_template_id' => ['type' => 'User\EventTemplate', 'field' => 'eventTemplate'],
             'code'                   => ['type' => 'string',             'field' => 'code'],
             'params'                 => ['type' => 'array',              'field' => 'params'],
@@ -116,18 +114,6 @@ class Event extends Entity
         return $this;
     }
 
-    public function getEmail(): ?string
-    {
-        return $this->email;
-    }
-
-    public function setEmail(?string $email): Event
-    {
-        $this->email = $email;
-        $this->params += ['user_email' => $email];
-        return $this;
-    }
-
     public function getEventTemplate(): EventTemplate
     {
         return $this->eventTemplate;
@@ -139,12 +125,12 @@ class Event extends Entity
         return $this;
     }
 
-    public function getCode(): string
+    public function getCode(): ?string
     {
         return $this->code;
     }
 
-    public function setCode(string $code): Event
+    public function setCode(?string $code): Event
     {
         $this->code = $code;
         return $this;

@@ -15,7 +15,7 @@
 
             <div class="mb-3">
                 <div class="float-end">
-                    <a href="/" class="text-muted">Forgot password?</a>
+                    <a href="/recover/" class="text-muted">Forgot password?</a>
                 </div>
 
                 <label for="password" class="form-label">Password</label>

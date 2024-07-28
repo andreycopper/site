@@ -9,16 +9,8 @@ use System\Request;
             <p class="text-muted">Welcome</p>
         </div>
 
-        <form action="/register/reg/?code=<?= Request::get('code') ?>" method="post" class="needs-validation" id="register" novalidate>
+        <form action="/register/reg/" method="post" class="needs-validation" id="register" novalidate>
             <input type="hidden" name="csrf" value="<?= $this->csrf ?>">
-
-            <div class="mb-3 login-block font-size-14">
-                <label for="login" class="form-label">Username <sup class="required">*</sup></label>
-                <input type="text" name="login" id="login" class="form-control" placeholder="Enter username" required value="test_user">
-                <div class="invalid-feedback font-size-12">
-                    Please Enter Username
-                </div>
-            </div>
 
             <div class="mb-3 email-block font-size-14">
                 <label for="email" class="form-label">Email <sup class="required">*</sup></label>
@@ -74,11 +66,11 @@ use System\Request;
                 beforeSend: function () {
                     $('#loader').show();
                 },
-                success: function (data, textStatus, jqXHR) {
+                success: function (data, textStatus, jqXHR) {console.log(data);
                     if (textStatus === 'success' && jqXHR.status === 200 && data && data.result)
                         window.location.href = '/register/success/' + data.message + '/';
                 },
-                error: function (jqXHR, textStatus, errorThrown) {
+                error: function (jqXHR, textStatus, errorThrown) {console.log(jqXHR);
                     $('#loader').hide();
                     showError(jqXHR.responseJSON.message);
                 }

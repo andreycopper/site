@@ -9,7 +9,7 @@
             Enter your Email and instructions will be sent to you!
         </div>
 
-        <form action="/recover/submit/" method="post">
+        <form action="/recover/submit/" method="post" id="recover">
             <input type="hidden" name="csrf" value="<?= $this->csrf ?>">
 
             <div class="mb-4">
@@ -18,12 +18,40 @@
             </div>
 
             <div class="text-center mt-4">
-                <button class="btn btn-primary w-100" type="submit">Reset</button>
+                <button class="btn btn-primary w-100" type="submit">Submit</button>
             </div>
         </form>
 
         <div class="text-center text-muted">
-            <p class="mt-4">Remember It? <a href="/" class="fw-medium text-decoration-underline"> Login</a></p>
+            <p class="mt-4">Remember It? <a href="/auth/" class="fw-medium text-decoration-underline">Login</a></p>
         </div>
     </div>
 </div>
+
+<script>
+    $(function () {
+        $('#recover button[type=submit]').on('click', function (e) {
+            e.preventDefault();
+            let form = $(this).parents('form');
+
+            $.ajax({
+                method: "POST",
+                dataType: 'json',
+                url: form.attr('action'),
+                data: form.serialize(),
+                beforeSend: function () {
+                    $('#loader').show();
+                },
+                success: function (data, textStatus, jqXHR) {console.log(data);
+                    $('#loader').hide();
+                    if (textStatus === 'success' && jqXHR.status === 200 && data && data.result)
+                        window.location.href = '/recover/success/' + data.message + '/';
+                },
+                error: function (jqXHR, textStatus, errorThrown) {console.log(jqXHR);
+                    $('#loader').hide();
+                    showError(jqXHR.responseJSON.message);
+                }
+            });
+        });
+    });
+</script>

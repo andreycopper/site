@@ -29,20 +29,22 @@ class Auth {
     const NOT_AUTHORIZED = 'Not authorized';
     const TOO_MANY_FAILED_ATTEMPTS = 'Too many failed auth attempts';
 
-    private string $login;
     private string $email;
     private string $password;
+    private bool $remember = false;
     private ?User $user = null;
     private ?Session $session = null;
 
     /**
-     * @param ?string $email
-     * @param ?string $password
+     * @param string $email
+     * @param string $password
+     * @param bool $remember
      */
-    public function __construct(?string $email = null, ?string $password = null)
+    public function __construct(string $email, string $password, bool $remember = false)
     {
         $this->email = $email;
         $this->password = $password;
+        $this->remember = $remember;
     }
 
     /**
@@ -70,6 +72,8 @@ class Auth {
     {
         $this->session = new Session($this->user->getId(), $this->user->getEmail(), self::PASSWORD_ENTERED);
         $this->session->setToken(Token::get($this->session));
+        if ($this->remember)
+            $this->session->setCookie(hash('sha512', $this->user->getEmail() . $this->user->getCreated()->format('Y.m.d H:i:s') . time()));
         $this->session->save();
 
         ModelUserSession::clearFailedAttempts($this->user->getEmail());
@@ -77,6 +81,7 @@ class Auth {
 
         $_SESSION['token'] = $this->session->getToken();
         $_SESSION['user'] = $this->user;
+        if ($this->remember) setcookie('user', $this->session->getCookie(), time() + Token::TOKEN_LIFE_TIME, '/', DOMAIN, 0);
 
         if (Request::isAjax()) Response::result();
         else {
@@ -99,7 +104,7 @@ class Auth {
             $userSession = Session::factory(['token' => $token]);
             if (!ValidationAuth::isValidSession($userSession)) return false;
 
-            $user = !empty($_SESSION['user']) ? $_SESSION['user'] : ModelUser::getById($userSession ?-> getUser()->getId());
+            $user = !empty($_SESSION['user']) ? $_SESSION['user'] : User::factory(['id' => $userSession ?-> getUser()->getId()]);
             if (empty($user->getId())) return false;
 
             $jwt = JWT::decode($token, new Key(Token::KEY, 'HS512'));
@@ -123,8 +128,8 @@ class Auth {
         ModelUserSession::deleteCurrent();
         unset($_SESSION['token']);
         unset($_SESSION['user']);
-        setcookie('token', '', time() - Token::TOKEN_LIFE_TIME, '/', SITE_URL, 0);
-        setcookie('PHPSESSID', '', time() - Token::TOKEN_LIFE_TIME, '/', SITE_URL, 0);
+        setcookie('user', '', time() - Token::TOKEN_LIFE_TIME, '/', DOMAIN, 0);
+        setcookie('PHPSESSID', '', time() - Token::TOKEN_LIFE_TIME, '/', DOMAIN, 0);
         session_destroy();
     }
 }

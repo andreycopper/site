@@ -73,7 +73,7 @@ class ValidationAuth extends Validation
     {
         return
             $token->iss === SITE_URL && $token->aud === $session->getEmail() &&
-            $token->data->user === $session->getEmail() && $token->data->service === $session->getService()->getId() &&
+            $token->data->user === $session->getEmail() && $token->data->service === $session->getServiceId() &&
             $token->data->ip === $session->getIp() && $token->data->device === $session->getDevice();
     }
 }

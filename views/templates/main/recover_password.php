@@ -10,7 +10,7 @@
             <h3>Recovery Password</h3>
         </div>
 
-        <form action="/recover/password/?code=<?= $code ?>" method="post">
+        <form action="/recover/password/?code=<?= $code ?>" method="post" id="recover">
             <input type="hidden" name="csrf" value="<?= $this->csrf ?>">
 
             <div class="mb-3">
@@ -42,3 +42,31 @@
         </form>
     </div>
 </div>
+
+<script>
+    $(function () {
+        $('#recover button[type=submit]').on('click', function (e) {
+            e.preventDefault();
+            let form = $(this).parents('form');
+
+            $.ajax({
+                method: "POST",
+                dataType: 'json',
+                url: form.attr('action'),
+                data: form.serialize(),
+                beforeSend: function () {
+                    $('#loader').show();
+                },
+                success: function (data, textStatus, jqXHR) {console.log(data);
+                    $('#loader').hide();
+                    if (textStatus === 'success' && jqXHR.status === 200 && data && data.result)
+                        window.location.href = '/recover/finish/' + data.message + '/';
+                },
+                error: function (jqXHR, textStatus, errorThrown) {console.log(jqXHR);
+                    $('#loader').hide();
+                    showError(jqXHR.responseJSON.message);
+                }
+            });
+        });
+    });
+</script>

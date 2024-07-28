@@ -10,7 +10,7 @@ class IpBlock extends Model
     public ?int $id = null;
     public string $ip;
     public ?int $user_id = null;
-    public ?string $login = null;
+    public ?string $email = null;
     public string $expire;
     public ?string $reason = null;
     public string $created;
@@ -32,7 +32,7 @@ class IpBlock extends Model
         $active = !empty($params['active']) ? 'AND ib.expire > NOW()' : '';
         $db->params = ['id' => $id];
         $db->sql = "
-            SELECT ib.id, ib.ip, ib.user_id, ib.login, ib.expire, ib.reason, ib.created, ib.updated 
+            SELECT ib.id, ib.ip, ib.user_id, ib.email, ib.expire, ib.reason, ib.created, ib.updated 
             FROM {$prefix}{$table} ib 
             WHERE ib.id = :id {$active}";
 
@@ -56,7 +56,7 @@ class IpBlock extends Model
         $active = !empty($params['active']) ? 'AND ib.expire > NOW()' : '';
         $db->params = ['ip' => $ip];
         $db->sql = "
-            SELECT ib.id, ib.ip, ib.user_id, ib.login, ib.expire, ib.reason, ib.created, ib.updated 
+            SELECT ib.id, ib.ip, ib.user_id, ib.email, ib.expire, ib.reason, ib.created, ib.updated 
             FROM {$prefix}{$table} ib 
             WHERE ib.ip = :ip {$active}
             ORDER BY ib.expire DESC 

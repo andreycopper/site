@@ -4,8 +4,6 @@ namespace Utils;
 use DateTime;
 use Entity\User\Event;
 use Exceptions\MailException;
-use Exceptions\UserException;
-use Models\User\Event as ModelUserEvent;
 
 class Mailer
 {
@@ -29,10 +27,8 @@ class Mailer
      */
     public function __construct(Event $event)
     {
-        if (!empty($event->getUser()))
-            $this->type = $event->getUser()->getMailingType()->getName();
-
-        $this->to = $event->getEmail() ?: $event->getUser()->getEmail();
+        $this->type = $event->getUser()->getMailingType()->getName();
+        $this->to = $event->getUser()->getEmail();
         $this->subject = $event->getEventTemplate()->getName();
         $this->message = $event->getEventTemplate()->getMessage();
         $this->prepareMessage($event)->removeTags();
@@ -64,7 +60,6 @@ class Mailer
     private function prepareMessage(Event $event): Mailer
     {
         if (!empty($event->getUser())) {
-            $this->message = str_replace('#LOGIN#', $event->getUser()->getLogin() ?: '', $this->message);
             $this->message = str_replace('#USER_EMAIL#', $event->getUser()->getEmail() ?: '', $this->message);
         }
 

@@ -12,6 +12,7 @@ use Models\User;
     <title>Site</title>
 
     <link rel="stylesheet" href="/css/bootstrap.css" media="all">
+    <link rel="stylesheet" href="/css/icons.min.css" media="all">
     <link rel="stylesheet" href="/css/styles.css" media="all">
     <link rel="stylesheet" href="/css/media.css" media="all">
     <link rel="stylesheet" href="/css/loader.css" media="all">

@@ -25,7 +25,7 @@ class ValidationForm extends Validation
      */
     public static function isValidRegisterForm(array $data): bool
     {
-        return self::isValidLogin($data['login']) && self::isValidEmail($data['email']) && self::isValidPassword($data['password']) &&
+        return self::isValidEmail($data['email']) && self::isValidPassword($data['password']) &&
             self::isValidPasswordConfirm($data['password'], $data['password_confirm']) && self::isValidCsrf($data['csrf']);
     }
 
@@ -48,7 +48,7 @@ class ValidationForm extends Validation
      */
     public static function isValidRecoveryPasswordForm(array $data): bool
     {
-        return self::isValidPassword($data['password']) && self::isValidPassword($data['password_confirm']) &&
-            self::isValidPasswordConfirm($data['password'], $data['password_confirm']) && self::isValidCsrf($data['csrf']);
+        return self::isValidPassword($data['password']) && self::isValidPasswordConfirm($data['password'], $data['password_confirm']) &&
+            self::isValidCsrf($data['csrf']);
     }
 }

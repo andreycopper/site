@@ -58,6 +58,7 @@ abstract class Entity
             !empty($params['login']) => static::MODEL::getByLogin($params['login'], $params),
             !empty($params['email']) => static::MODEL::getByEmail($params['email'], $params),
             !empty($params['token']) => static::MODEL::getByToken($params['token'], $params),
+            !empty($params['cookie']) => static::MODEL::getByCookie($params['cookie'], $params),
             !empty($params['user_id']) => static::MODEL::getByUserId($params['user_id'], $params),
             !empty($params['code']) => static::MODEL::getByCode($params['code'], $params),
             !empty($params['ip']) => static::MODEL::getByIp($params['ip'], $params),
@@ -133,7 +134,7 @@ abstract class Entity
                     else {
                         $reflectionClass = new ReflectionClass("Entity\\$type");
                         if ($reflectionClass->isSubclassOf('Entity\Entity')) {
-                            $value = $reflectionClass->getMethod('factory')->invoke(null, ['id' => $value]);
+                            $value = $reflectionClass->getMethod('factory')->invoke(null, ['id' => $value, 'active' => false]);
                         }
                     }
                 }

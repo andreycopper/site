@@ -23,7 +23,6 @@ class User extends Entity
     private bool $isBlocked = false;
     private ?Block $block = null;
     private Group $group;
-    private ?string $login = null;
     private ?string $password = null;
     private ?string $email = null;
     private bool $isShowEmail = false;
@@ -44,17 +43,15 @@ class User extends Entity
 
     /**
      * New user
-     * @param ?string $login
      * @param ?string $password
      * @param ?string $email
      * @throws ReflectionException
      */
-    public function __construct(?string $login = null, ?string $password = null, ?string $email = null)
+    public function __construct(?string $email = null, ?string $password = null)
     {
         $this->group = Group::factory(['id' => ModelUserGroup::USER_USER]);
         $this->gender = Gender::factory(['id' => ModelUserGender::GENDER_MALE]);
         $this->mailingType = TextType::factory(['id' => ModelTextType::TYPE_HTML]);
-        $this->login = $login;
         $this->password = !empty($password) ? password_hash($password, PASSWORD_DEFAULT) : null;
         $this->email = $email;
         $this->created = new DateTime();
@@ -80,7 +77,6 @@ class User extends Entity
             'locked'                  => ['type' => 'bool',           'field' => 'isLocked'],
             'block_id'                => ['type' => 'User\Block',     'field' => 'block'],
             'group_id'                => ['type' => 'User\Group',     'field' => 'group'],
-            'login'                   => ['type' => 'string',         'field' => 'login'],
             'password'                => ['type' => 'string',         'field' => 'password'],
             'email'                   => ['type' => 'string',         'field' => 'email'],
             'show_email'              => ['type' => 'bool',           'field' => 'isShowEmail'],
@@ -187,17 +183,6 @@ class User extends Entity
     public function setGroup(Group $group): User
     {
         $this->group = $group;
-        return $this;
-    }
-
-    public function getLogin(): string
-    {
-        return $this->login;
-    }
-
-    public function setLogin(string $login): User
-    {
-        $this->login = $login;
         return $this;
     }
 

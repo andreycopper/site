@@ -18,28 +18,29 @@ class Session extends Entity
     private bool $isActive = true;
     private string $email;
     private User $user;
-    private Service $service;
+    private int $serviceId;
     private string $ip;
     private string $device;
     private DateTime $logOn;
     private DateTime $expire;
     private ?string $token = null;
+    private ?string $cookie = null;
     private ?string $comment = null;
 
     /**
      * New user session
-     * @param int $userId - user id
+     * @param ?int $userId - user id
      * @param ?string $email - user login
      * @param ?string $comment - comment
      * @throws ReflectionException
      */
-    public function __construct(int $userId = 1, ?string $email = null, ?string $comment = null)
+    public function __construct(int $userId = null, ?string $email = null, ?string $comment = null)
     {
         $lifeTime = Token::TOKEN_LIFE_TIME;
 
         $this->user = User::factory(['id' => $userId]);
         if (!empty($email)) $this->email = $email;
-        $this->service = Service::factory(['id' => ModelUserSession::SERVICE_SITE]);
+        $this->serviceId = ModelUserSession::SERVICE_SITE;
         $this->ip = $_SERVER['REMOTE_ADDR'];
         $this->device = $_SERVER['HTTP_USER_AGENT'];
         $this->logOn = new DateTime();
@@ -58,12 +59,13 @@ class Session extends Entity
             'active'     => ['type' => 'bool',     'field' => 'isActive'],
             'email'      => ['type' => 'string',   'field' => 'email'],
             'user_id'    => ['type' => 'User',     'field' => 'user'],
-            'service_id' => ['type' => 'Service',  'field' => 'service'],
+            'service_id' => ['type' => 'int',      'field' => 'serviceId'],
             'ip'         => ['type' => 'string',   'field' => 'ip'],
             'device'     => ['type' => 'string',   'field' => 'device'],
             'log_on'     => ['type' => 'datetime', 'field' => 'logOn'],
             'expire'     => ['type' => 'datetime', 'field' => 'expire'],
             'token'      => ['type' => 'string',   'field' => 'token'],
+            'cookie'     => ['type' => 'string',   'field' => 'cookie'],
             'comment'    => ['type' => 'string',   'field' => 'comment'],
         ];
     }
@@ -112,14 +114,14 @@ class Session extends Entity
         return $this;
     }
 
-    public function getService(): Service
+    public function getServiceId(): int
     {
-        return $this->service;
+        return $this->serviceId;
     }
 
-    public function setService(Service $service): Session
+    public function setServiceId(int $serviceId): Session
     {
-        $this->service = $service;
+        $this->serviceId = $serviceId;
         return $this;
     }
 
@@ -175,6 +177,17 @@ class Session extends Entity
     public function setToken(string $token): Session
     {
         $this->token = $token;
+        return $this;
+    }
+
+    public function getCookie(): ?string
+    {
+        return $this->cookie;
+    }
+
+    public function setCookie(?string $cookie): Session
+    {
+        $this->cookie = $cookie;
         return $this;
     }
 

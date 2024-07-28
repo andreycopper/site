@@ -1,20 +1,19 @@
 <?php
 namespace Controllers;
 
-use Entity;
 use System\Request;
+use System\Response;
 use Entity\User\Event;
-use Utils\Data;
 use ReflectionException;
 use Exceptions\DbException;
 use Exceptions\MailException;
 use Exceptions\UserException;
-use Exceptions\NotFoundException;
-use Exceptions\ForbiddenException;
-use System\Recovery as SystemRecovery;
 use Utils\Data\ValidationUser;
 use Utils\Data\ValidationEvent;
 use Utils\Data\ValidationForm;
+use Exceptions\ForbiddenException;
+use System\Recovery as SystemRecovery;
+use Models\User\Event as ModelUserEvent;
 
 /**
  * Class Recover
@@ -34,14 +33,31 @@ class Recover extends Controller
     /**
      * Send recovery code
      * @return void
-     * @throws UserException|MailException|ReflectionException|ForbiddenException
+     * @throws UserException|MailException|ReflectionException|ForbiddenException|DbException
      */
     protected function actionSubmit(): void
     {
         if (Request::isPost()) {
             ValidationForm::isValidRecoveryEmailForm(Request::post());
+
+            $event = Event::factory(['email' => Request::post('email'), 'template' => ModelUserEvent::TEMPLATE_PASSWORD_RECOVERY]);
+            ValidationEvent::isEventNotExist($event);
+
             (new SystemRecovery(Request::post('email')))->submit();
         }
+    }
+
+    /**
+     * Success recovery page
+     * @param string|null $email - email
+     * @return void
+     * @throws DbException|ForbiddenException|ReflectionException|UserException
+     */
+    protected function actionSuccess(?string $email = null): void
+    {
+        ValidationUser::isExistActiveUserEmail($email);
+        $this->set('email', $email);
+        $this->display('recover_email');
     }
 
     /**
@@ -56,41 +72,30 @@ class Recover extends Controller
 
         if (empty($code)) $this->display('recover_code');
         else {
-            $event = Event::factory(['code' => $code, 'active' => false]);
+            $event = Event::factory(['code' => $code, 'template' => ModelUserEvent::TEMPLATE_PASSWORD_RECOVERY, 'active' => false]);
             ValidationEvent::event($event);
             ValidationUser::isValidActiveUser($event->getUser());
 
             if (Request::isPost()) {
                 ValidationForm::isValidRecoveryPasswordForm(Request::post());
-                (new SystemRecovery())->setUser($event->getUser())->setEvent($event)->recover();
+                (new SystemRecovery($event->getUser()->getEmail()))->setUser($event->getUser())->setEvent($event)->recover();
             }
 
-            $this->display('recover_password');
+            if (Request::isAjax()) Response::result(200, true, $code);
+            else $this->display('recover_password');
         }
     }
 
     /**
-     * Success recovery page
-     * @param $login - login
-     * @return void
-     * @throws NotFoundException
-     */
-    protected function actionSuccess(?string $login = null): void
-    {
-        if (empty($login)) throw new NotFoundException();
-
-        $this->set('login', $login);
-        $this->display('recover_email');
-    }
-
-    /**
      * Success confirm page
-     * @param string $login - login
+     * @param string $email - email
      * @return void
+     * @throws DbException|ForbiddenException|ReflectionException|UserException
      */
-    protected function actionFinish(string $login): void
+    protected function actionFinish(string $email): void
     {
-        $this->set('login', $login);
+        ValidationUser::isExistActiveUserEmail($email);
+        $this->set('email', $email);
         $this->display('recover_finish');
     }
 }

@@ -13,7 +13,7 @@ class IpBlock extends Entity
     private ?int $id = null;
     private ?string $ip = null;
     private ?int $userId = null;
-    private ?string $login = null;
+    private ?string $email = null;
     private DateTime $expire;
     private ?string $reason = null;
     private DateTime $created;
@@ -23,16 +23,16 @@ class IpBlock extends Entity
      * New ip block
      * @param ?string $ip - ip address
      * @param ?int $userId - user id
-     * @param ?string $login - user login
+     * @param ?string $email - user login
      * @param ?string $reason - block reason
      */
-    public function __construct(?string $ip = null, ?int $userId = null, ?string $login = null, ?string $reason = null)
+    public function __construct(?string $ip = null, ?int $userId = null, ?string $email = null, ?string $reason = null)
     {
         $blockTime = ModelUserBlock::INTERVAL_DAY;
 
         $this->ip = $ip;
         $this->userId = $userId;
-        $this->login = $login;
+        $this->email = $email;
         $this->expire = (new DateTime())->add(new DateInterval("PT{$blockTime}S"));
         $this->reason = $reason;
         $this->created = new DateTime();
@@ -48,7 +48,7 @@ class IpBlock extends Entity
             'id'      => ['type' => 'int',      'field' => 'id'],
             'ip'      => ['type' => 'string',   'field' => 'ip'],
             'user_id' => ['type' => 'int',      'field' => 'userId'],
-            'login'   => ['type' => 'string',   'field' => 'login'],
+            'email'   => ['type' => 'string',   'field' => 'email'],
             'expire'  => ['type' => 'datetime', 'field' => 'expire'],
             'reason'  => ['type' => 'string',   'field' => 'reason'],
             'created' => ['type' => 'datetime', 'field' => 'created'],
@@ -89,14 +89,14 @@ class IpBlock extends Entity
         return $this;
     }
 
-    public function getLogin(): ?string
+    public function getEmail(): ?string
     {
-        return $this->login;
+        return $this->email;
     }
 
-    public function setLogin(?string $login): IpBlock
+    public function setEmail(?string $email): IpBlock
     {
-        $this->login = $login;
+        $this->email = $email;
         return $this;
     }
 

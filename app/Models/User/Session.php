@@ -30,6 +30,7 @@ class Session extends Model
     public string $log_on;
     public string $expire;
     public ?string $token = null;
+    public ?string $cookie = null;
     public ?string $comment = null;
 
     /**
@@ -49,7 +50,7 @@ class Session extends Model
         $db->params = ['id' => $id];
         $db->sql = "
             SELECT 
-                us.id, us.active, us.email, us.user_id, us.service_id, us.ip, us.device, us.log_on, us.expire, us.token, us.comment  
+                us.id, us.active, us.email, us.user_id, us.service_id, us.ip, us.device, us.log_on, us.expire, us.token, us.cookie, us.comment  
             FROM {$prefix}{$table} us 
             WHERE us.id = :id {$active}";
 
@@ -74,7 +75,7 @@ class Session extends Model
         $db->params = ['token' => $token];
         $db->sql = "
             SELECT 
-                us.id, us.active, us.email, us.user_id, us.service_id, us.ip, us.device, us.log_on, us.expire, us.token, us.comment 
+                us.id, us.active, us.email, us.user_id, us.service_id, us.ip, us.device, us.log_on, us.expire, us.token, us.cookie, us.comment 
             FROM {$prefix}{$table} us 
             WHERE us.token = :token {$active}";
 
@@ -83,8 +84,33 @@ class Session extends Model
     }
 
     /**
+     * Return user session by token
+     * @param ?string $cookie - token
+     * @param ?array $params - params
+     * @return ?array
+     */
+    public static function getByCookie(?string $cookie, ?array $params = []): ?array
+    {
+        $params += ['active' => true, 'object' => false];
+        $prefix = self::$db_prefix;
+        $table = self::$db_table;
+
+        $db = Db::getInstance();
+        $active = !empty($params['active']) ? 'AND us.active IS NOT NULL AND us.expire > NOW()' : '';
+        $db->params = ['cookie' => $cookie];
+        $db->sql = "
+            SELECT 
+                us.id, us.active, us.email, us.user_id, us.service_id, us.ip, us.device, us.log_on, us.expire, us.token, us.cookie, us.comment 
+            FROM {$prefix}{$table} us 
+            WHERE us.cookie = :cookie {$active}";
+
+        $data = $db->query(!empty($params['object']) ? static::class : null);
+        return !empty($data) ? array_shift($data) : null;
+    }
+
+    /**
      * Count of failed auth attempts of last day
-     * @param $login - login
+     * @param $email - email
      * @param $ip - ip
      * @return array
      * @throws DbException
@@ -98,7 +124,7 @@ class Session extends Model
         $db->params = ['email' => $email, 'ip' => $ip];
         $db->sql = "
             WITH q AS (
-                SELECT id, active, email, ip, device, log_on, token, comment
+                SELECT id, active, email, ip, device, log_on, token, cookie, comment
                 FROM {$prefix}{$table}
                 WHERE email = :email AND IFNULL(token, '') = '' AND log_on > DATE_SUB(NOW(), INTERVAL 1 DAY) AND active IS NOT NULL
             ),

@@ -10,11 +10,10 @@ class Event extends Model
     const TYPE_SMS = 2;
     const TYPE_PUSH = 3;
 
-    const TEMPLATE_INVITATION = 1;
-    const TEMPLATE_EMAIL_CONFIRM = 2;
-    const TEMPLATE_REGISTER = 3;
-    const TEMPLATE_PASSWORD_RECOVERY = 4;
-    const TEMPLATE_PASSWORD_CHANGED = 5;
+    const TEMPLATE_EMAIL_CONFIRM = 1;
+    const TEMPLATE_REGISTER = 2;
+    const TEMPLATE_PASSWORD_RECOVERY = 3;
+    const TEMPLATE_PASSWORD_CHANGED = 4;
 
     const EVENT_EMAIL_EMPTY = 'Event email is empty';
     const EVENT_DOESNT_EXIST = 'Event doesn\'t exist';
@@ -24,13 +23,13 @@ class Event extends Model
     const CODE_ALREADY_EXPIRED = 'This code already expired';
     const CODE_ALREADY_ACTIVATED = 'This code already activated';
     const CODE_DIDNT_SEND = 'This code didn\'t send anywhere';
+    const CODE_ALREADY_SENT = 'Code already sent';
 
     protected static $db_table = 'site.user_events';
 
     public ?int $id;
     public ?int $active = 1;
     public ?int $user_id = null;
-    public ?string $email = null;
     public int $user_event_template_id;
     public ?string $code = null;
     public ?string $params = null;
@@ -56,7 +55,7 @@ class Event extends Model
         $db->params = ['id' => $id];
         $db->sql = "
             SELECT 
-                e.id, e.active, e.user_id, e.email, e.user_event_template_id, e.code, e.params, e.expire, e.send, e.created, e.updated
+                e.id, e.active, e.user_id, e.user_event_template_id, e.code, e.params, e.expire, e.send, e.created, e.updated
             FROM {$prefix}{$table} e
             WHERE e.id = :id {$active}";
 
@@ -84,9 +83,38 @@ class Event extends Model
 
         $db->sql = "
             SELECT 
-                e.id, e.active, e.user_id, e.email, e.user_event_template_id, e.code, e.params, e.expire, e.send, e.created, e.updated
+                e.id, e.active, e.user_id, e.user_event_template_id, e.code, e.params, e.expire, e.send, e.created, e.updated
             FROM {$prefix}{$table} e 
             WHERE e.code IS NOT NULL AND e.code = :code {$template} {$active}";
+
+        $data = $db->query(!empty($params['object']) ? static::class : null);
+        return !empty($data) ? array_shift($data) : null;
+    }
+
+    /**
+     * Get event by code
+     * @param string $email - email
+     * @param ?array $params - params
+     * @return ?array
+     */
+    public static function getByEmail(string $email, ?array $params = []): ?array
+    {
+        $params += ['active' => true, 'object' => false];
+        $prefix = self::$db_prefix;
+        $table = self::$db_table;
+
+        $db = Db::getInstance();
+        $active = !empty($params['active']) ? 'AND e.expire > NOW() AND e.active IS NOT NULL' : '';
+        $template = !empty($params['template']) ? 'AND e.user_event_template_id = :template' : '';
+        $db->params = ['email' => $email];
+        if (!empty($params['template'])) $db->params['template'] = $params['template'];
+
+        $db->sql = "
+            SELECT 
+                e.id, e.active, e.user_id, e.user_event_template_id, e.code, e.params, e.expire, e.send, e.created, e.updated
+            FROM {$prefix}{$table} e 
+            LEFT JOIN {$prefix}site.users u ON u.id = e.user_id
+            WHERE e.code IS NOT NULL AND u.email = :email {$template} {$active}";
 
         $data = $db->query(!empty($params['object']) ? static::class : null);
         return !empty($data) ? array_shift($data) : null;

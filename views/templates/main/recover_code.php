@@ -11,7 +11,7 @@
             <p class="text-muted">Enter the code into the form</p>
         </div>
 
-        <form action="/recover/password/" method="get" class="needs-validation" novalidate>
+        <form action="/recover/password/" method="get" id="recover" class="needs-validation" novalidate>
             <!--        <input type="hidden" name="csrf" value="--><?php //= $this->csrf ?><!--">-->
 
             <div class="mb-3 login-block font-size-14">
@@ -28,3 +28,31 @@
         </form>
     </div>
 </div>
+
+<script>
+    $(function () {
+        $('#recover button[type=submit]').on('click', function (e) {
+            e.preventDefault();
+            let form = $(this).parents('form');
+
+            $.ajax({
+                method: "GET",
+                dataType: 'json',
+                url: form.attr('action'),
+                data: form.serialize(),
+                beforeSend: function () {
+                    $('#loader').show();
+                },
+                success: function (data, textStatus, jqXHR) {console.log(data);
+                    $('#loader').hide();
+                    if (textStatus === 'success' && jqXHR.status === 200 && data && data.result)
+                        window.location.href = '/recover/password/?code=' + data.message;
+                },
+                error: function (jqXHR, textStatus, errorThrown) {console.log(jqXHR);
+                    $('#loader').hide();
+                    showError(jqXHR.responseJSON.message);
+                }
+            });
+        });
+    });
+</script>

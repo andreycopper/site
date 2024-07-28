@@ -41,6 +41,19 @@ class ValidationUser extends Validation
     }
 
     /**
+     * Check user
+     * @param ?User $user
+     * @return bool
+     * @throws UserException|DbException|ForbiddenException
+     */
+    public static function isValidNotActiveUser(?User $user): bool
+    {
+        self::isValidUser($user);
+        if ($user->isActive()) throw new UserException(self::USER_ACTIVE, 400);
+        return true;
+    }
+
+    /**
      * Checking blocked users
      * @param User $user - user
      * @return bool
@@ -70,7 +83,7 @@ class ValidationUser extends Validation
         $failedAttempts = ModelUserSession::getFailedAttempts($user->getEmail(), $_SERVER['REMOTE_ADDR']);
 
         if ($failedAttempts['by_ip'] >= Auth::MAX_FAILED_ATTEMPTS_BY_IP) {
-            $ipBlock = new IpBlock($_SERVER['REMOTE_ADDR'], $user->getId(), $user->getLogin(), self::TOO_MANY_FAILED_ATTEMPTS_BY_IP . " {$_SERVER['REMOTE_ADDR']}");
+            $ipBlock = new IpBlock($_SERVER['REMOTE_ADDR'], $user->getId(), $user->getEmail(), self::TOO_MANY_FAILED_ATTEMPTS_BY_IP . " {$_SERVER['REMOTE_ADDR']}");
             $ipBlock->save();
             ModelUserSession::clearFailedAttempts($user->getEmail());
 
@@ -79,7 +92,7 @@ class ValidationUser extends Validation
         }
 
         if ($failedAttempts['total'] >= Auth::MAX_TOTAL_FAILED_ATTEMPTS) {
-            $userBlock = new Block($user->getId(), self::TOO_MANY_FAILED_ATTEMPTS_BY_LOGIN . " {$user->getLogin()}");
+            $userBlock = new Block($user->getId(), self::TOO_MANY_FAILED_ATTEMPTS_BY_LOGIN . " {$user->getEmail()}");
             $userBlock->save();
             ModelUserSession::clearFailedAttempts($user->getEmail());
 
@@ -87,64 +100,6 @@ class ValidationUser extends Validation
             throw new ForbiddenException(self::USER_TEMPORARILY_BLOCKED_TILL . $dt . '<br>' . self::REASON . ": {$userBlock->getReason()}", 403);
         }
 
-        return true;
-    }
-
-    /**
-     * Check existing user login
-     * @param ?string $login - login
-     * @return bool
-     * @throws UserException|ReflectionException
-     */
-    public static function isExistUserLogin(?string $login): bool
-    {
-        if (empty($login)) throw new UserException(ModelUser::LOGIN_EMPTY);
-
-        $user = User::factory(['login' => $login, 'active' => false]);
-        if (empty($user)) throw new UserException(ModelUser::USER_NOT_FOUND);
-
-        return true;
-    }
-
-    /**
-     * Check not existing user login
-     * @param $login - login
-     * @return bool
-     * @throws UserException|ReflectionException
-     */
-    public static function isNotExistUserLogin($login): bool
-    {
-        if (!empty(User::factory(['login' => $login, 'active' => false]))) throw new UserException(ModelUser::LOGIN_EXIST);
-        return true;
-    }
-
-    /**
-     * Checking existing activated user login
-     * @param ?string $login - user login
-     * @return bool
-     * @throws DbException|ForbiddenException|ReflectionException|UserException
-     */
-    public static function isExistActiveUserLogin(?string $login): bool
-    {
-        self::isValidLogin($login);
-        $user = User::factory(['login' => $login, 'active' => false]);
-        self::isValidUser($user);
-        if (!$user->isActive()) throw new UserException(ModelUser::USER_NOT_ACTIVE);
-        return true;
-    }
-
-    /**
-     * Checking existing not activated user login
-     * @param ?string $login - user login
-     * @return bool
-     * @throws DbException|ForbiddenException|ReflectionException|UserException
-     */
-    public static function isExistNotActiveUserLogin(?string $login): bool
-    {
-        self::isValidLogin($login);
-        $user = User::factory(['login' => $login, 'active' => false]);
-        self::isValidUser($user);
-        if ($user->isActive()) throw new UserException(ModelUser::ALREADY_ACTIVATED);
         return true;
     }
 
@@ -169,6 +124,36 @@ class ValidationUser extends Validation
     public static function isNotExistUserEmail($email): bool
     {
         if (!empty(User::factory(['email' => $email, 'active' => false]))) throw new UserException(ModelUser::EMAIL_EXIST);
+        return true;
+    }
+
+    /**
+     * Checking existing activated user login
+     * @param ?string $email - user email
+     * @return bool
+     * @throws DbException|ForbiddenException|ReflectionException|UserException
+     */
+    public static function isExistActiveUserEmail(?string $email): bool
+    {
+        self::isValidEmail($email);
+        $user = User::factory(['email' => $email, 'active' => false]);
+        self::isValidUser($user);
+        if (!$user->isActive()) throw new UserException(ModelUser::USER_NOT_ACTIVE);
+        return true;
+    }
+
+    /**
+     * Checking existing not activated user login
+     * @param ?string $email - user email
+     * @return bool
+     * @throws DbException|ForbiddenException|ReflectionException|UserException
+     */
+    public static function isExistNotActiveUserEmail(?string $email): bool
+    {
+        self::isValidEmail($email);
+        $user = User::factory(['email' => $email, 'active' => false]);
+        self::isValidUser($user);
+        if ($user->isActive()) throw new UserException(ModelUser::ALREADY_ACTIVATED);
         return true;
     }
 }

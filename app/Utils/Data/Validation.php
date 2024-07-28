@@ -21,6 +21,7 @@ class Validation
     const REASON = 'Reason';
     const WRONG_TOKEN = 'Wrong token';
     const EMAIL_INCORRECT = 'Incorrect email';
+    const USER_ACTIVE = 'User is already active';
     const USER_NOT_ACTIVE = 'User is not active';
     const USER_NOT_FOUND = 'User is not found';
     const USER_IS_BLOCKED = 'User is blocked';
@@ -100,12 +101,8 @@ class Validation
      */
     protected static function isValidPassword(string $password): bool
     {
-        if (empty($password))
-            throw new UserException(self::PASSWORD_EMPTY);
-
-        if (!self::check(self::USER_PASSWORD, $password))
-            throw new UserException(self::PASSWORD_NOT_MATCH_REQUIREMENTS);
-
+        if (empty($password)) throw new UserException(self::PASSWORD_EMPTY);
+        if (!self::check(self::USER_PASSWORD, $password)) throw new UserException(self::PASSWORD_NOT_MATCH_REQUIREMENTS);
         return true;
     }
 
@@ -118,12 +115,8 @@ class Validation
      */
     protected static function isValidPasswordConfirm(string $password, string $passwordConfirm): bool
     {
-        if (!self::check(self::USER_PASSWORD, $passwordConfirm))
-            throw new UserException(self::PASSWORD_NOT_MATCH_REQUIREMENTS);
-
-        if ($password !== $passwordConfirm)
-            throw new UserException(self::PASSWORD_NOT_MATCH_CONFIRMATION);
-
+        self::isValidPassword($passwordConfirm);
+        if ($password !== $passwordConfirm) throw new UserException(self::PASSWORD_NOT_MATCH_CONFIRMATION);
         return true;
     }
 

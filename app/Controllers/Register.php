@@ -37,24 +37,21 @@ class Register extends Controller
     protected function actionReg(): void
     {
         if (Request::isPost()) {
-            $code = Request::get('code');
-            $event = Event::factory(['code' => $code, 'active' => false, 'template' => ModelUserEvent::TEMPLATE_INVITATION]);
-            ValidationEvent::event($event);
             ValidationForm::isValidRegisterForm(Request::post());
-            (new SystemRegister(Request::post('login'), Request::post('password'), Request::post('email')))->register($event);
+            (new SystemRegister(Request::post('email'), Request::post('password')))->register();
         }
     }
 
     /**
      * Success register page
-     * @param string|null $login - login
+     * @param string|null $email - login
      * @return void
      * @throws DbException|ForbiddenException|ReflectionException|UserException
      */
-    protected function actionSuccess(?string $login = null): void
+    protected function actionSuccess(?string $email = null): void
     {
-        ValidationUser::isExistNotActiveUserLogin($login);
-        $this->set('login', $login);
+        ValidationUser::isExistNotActiveUserEmail($email);
+        $this->set('email', $email);
         $this->display('register_success');
     }
 
@@ -69,10 +66,10 @@ class Register extends Controller
 
         if (!empty($code)) {
             $code = Request::get('code');
-            $event = Event::factory(['code' => $code, 'active' => false]);
+            $event = Event::factory(['code' => $code, 'template' => ModelUserEvent::TEMPLATE_EMAIL_CONFIRM, 'active' => false]);
             ValidationEvent::event($event);
-            ValidationUser::isValidUser($event->getUser());
-            (new SystemRegister($event->getUser()->getLogin(), $event->getUser()->getPassword(), $event->getUser()->getEmail()))->confirm($event);
+            ValidationUser::isValidNotActiveUser($event->getUser());
+            (new SystemRegister($event->getUser()->getEmail(), $event->getUser()->getPassword()))->confirm($event);
         }
 
         $this->set('code', $code);
@@ -81,14 +78,14 @@ class Register extends Controller
 
     /**
      * Success confirm page
-     * @param string $login - login
+     * @param string $email - login
      * @return void
      * @throws DbException|ForbiddenException|ReflectionException|UserException
      */
-    protected function actionFinish(string $login): void
+    protected function actionFinish(string $email): void
     {
-        ValidationUser::isExistActiveUserLogin($login);
-        $this->set('login', $login);
+        ValidationUser::isExistActiveUserEmail($email);
+        $this->set('email', $email);
         $this->display('register_finish');
     }
 }
