@@ -4,89 +4,84 @@ namespace System;
 use DateTime;
 use Entity\User;
 use Entity\User\Event;
+use Utils\Data\Handler;
 use ReflectionException;
+use Exceptions\DbException;
 use Exceptions\MailException;
 use Models\User as ModelUser;
 use Exceptions\UserException;
 use Utils\Data\ValidationUser;
+use Utils\Data\ValidationEvent;
+use Exceptions\ForbiddenException;
 use Models\User\Event as ModelUserEvent;
 
 class Register {
-    private string $email;
-    private string $password;
+    private ?Event $event;
 
     /**
-     * @param string $email - email
-     * @param string $password - password
+     * @param ?int $eventType - event type
+     * @param ?string $code - event code
+     * @throws DbException|ForbiddenException|ReflectionException|UserException
      */
-    public function __construct(string $email, string $password)
+    public function __construct(?int $eventType = null, ?string $code = null)
     {
-        $this->email = $email;
-        $this->password = $password;
+        if (!empty($eventType) && !empty($code)) {
+            ValidationEvent::isValidCode($code);
+            $this->event = Event::factory(['code' => $code, 'template' => $eventType, 'active' => false]);
+            ValidationEvent::event($this->event);
+
+            if (!empty($this->event->getUser())) ValidationUser::isValidUser($this->event->getUser());
+        }
     }
 
     /**
      * Register
-     * @throws UserException|MailException|ReflectionException
+     * @param string $email - email
+     * @param string $password - password
+     * @return string
+     * @throws DbException|ForbiddenException|MailException|ReflectionException|UserException
      */
-    public function register(): void
+    public function register(string $email, string $password): string
     {
-        ValidationUser::isNotExistUserEmail($this->email);
+        $email = Handler::toEmail($email);
+        $password = Handler::toPassword($password);
+        ValidationUser::isNotExistUserEmail($email);
 
-        if (!(new User($this->email, $this->password))->save()) throw new UserException(ModelUser::USER_NOT_SAVED);
-        $user = User::factory(['email' => $this->email, 'active' => false]);
-
+        if (!(new User($email, $password))->save()) throw new UserException(ModelUser::USER_NOT_SAVED);
+        $user = User::factory(['email' => $email, 'active' => false]);
+        ValidationUser::isValidUser($user);
         if (!(new Crypt())->generatePair()->save($user->getId())) throw new UserException(ModelUser::USER_NOT_CRYPT_KEY);
 
-        $eventRegister = new Event(ModelUserEvent::TEMPLATE_EMAIL_CONFIRM, $user, ['user_email' => $this->email]);
-        if (!$eventRegister->send()) throw new UserException(ModelUser::USER_NOT_SENT_CONFIRM);
+        $regEvent = new Event(ModelUserEvent::TEMPLATE_EMAIL_CONFIRM, $user->getEmail(), $user);
+        if (!$regEvent->send()) throw new UserException(ModelUser::USER_NOT_SENT_CONFIRM);
 
-        if (Request::isAjax()) Response::result(200, true, $user->getEmail());
-        else {
-            header("Location: /register/success/{$user->getEmail()}");
-            die;
-        }
+        return $user->getEmail();
     }
 
     /**
-     * @param Event $event - confirm event
-     * @return void
+     * Register confirm
+     * @return string
      * @throws MailException|ReflectionException|UserException
      */
-    public function confirm(Event $event): void
+    public function confirm(): string
     {
         $date = new DateTime();
-        $event->getUser()->setActive(true)->setUpdated($date)->save();
-        $event->setActive(false)->setUpdated($date)->save();
-        $regEvent = new Event(ModelUserEvent::TEMPLATE_REGISTER, $event->getUser());
-        $regEvent->send();
+        $this->event->getUser()->setActive(true)->setUpdated($date)->save();
+        $this->event->setActive(false)->setUpdated($date)->save();
 
-        if (Request::isAjax()) Response::result(200, true, $event->getUser()->getEmail());
-        else {
-            header("Location: /register/finish/{$event->getUser()->getEmail()}/");
-            die;
-        }
+        $regEvent = new Event(ModelUserEvent::TEMPLATE_REGISTER, $this->event->getUser()->getEmail(), $this->event->getUser());
+        if (!$regEvent->send()) throw new UserException(ModelUser::USER_NOT_SENT_VERIFY);
+
+        return $this->event->getUser()->getEmail();
     }
 
-    public function getPassword(): string
+    public function getEvent(): ?Event
     {
-        return $this->password;
+        return $this->event;
     }
 
-    public function setPassword(string $password): Register
+    public function setEvent(?Event $event): void
     {
-        $this->password = $password;
-        return $this;
-    }
-
-    public function getEmail(): string
-    {
-        return $this->email;
-    }
-
-    public function setEmail(string $email): Register
-    {
-        $this->email = $email;
-        return $this;
+        $this->event = $event;
     }
 }

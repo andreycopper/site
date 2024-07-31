@@ -17,7 +17,7 @@ class Session extends Entity
     private ?int $id = null;
     private bool $isActive = true;
     private string $email;
-    private User $user;
+    private ?User $user;
     private int $serviceId;
     private string $ip;
     private string $device;

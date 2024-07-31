@@ -7,6 +7,7 @@ use ReflectionException;
 use Exceptions\DbException;
 use Exceptions\MailException;
 use Exceptions\UserException;
+use System\Response;
 use Utils\Data\ValidationForm;
 use Utils\Data\ValidationUser;
 use Utils\Data\ValidationEvent;
@@ -32,13 +33,20 @@ class Register extends Controller
     /**
      * User register
      * @return void
-     * @throws UserException|ReflectionException|MailException|ForbiddenException
+     * @throws UserException|ReflectionException|MailException|ForbiddenException|DbException
      */
     protected function actionReg(): void
     {
         if (Request::isPost()) {
             ValidationForm::isValidRegisterForm(Request::post());
-            (new SystemRegister(Request::post('email'), Request::post('password')))->register();
+
+            $email = (new SystemRegister())->register(Request::post('email'), Request::post('password'));
+
+            if (Request::isAjax()) Response::result(200, true, $email);
+            else {
+                header("Location: /register/success/{$email}");
+                die;
+            }
         }
     }
 
@@ -65,11 +73,13 @@ class Register extends Controller
         $code = Request::get('code');
 
         if (!empty($code)) {
-            $code = Request::get('code');
-            $event = Event::factory(['code' => $code, 'template' => ModelUserEvent::TEMPLATE_EMAIL_CONFIRM, 'active' => false]);
-            ValidationEvent::event($event);
-            ValidationUser::isValidNotActiveUser($event->getUser());
-            (new SystemRegister($event->getUser()->getEmail(), $event->getUser()->getPassword()))->confirm($event);
+            $email = (new SystemRegister(ModelUserEvent::TEMPLATE_EMAIL_CONFIRM, $code))->confirm();
+
+            if (Request::isAjax()) Response::result(200, true, $email);
+            else {
+                header("Location: /register/finish/{$email}/");
+                die;
+            }
         }
 
         $this->set('code', $code);

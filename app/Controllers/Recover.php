@@ -8,6 +8,7 @@ use ReflectionException;
 use Exceptions\DbException;
 use Exceptions\MailException;
 use Exceptions\UserException;
+use Utils\Data\Handler;
 use Utils\Data\ValidationUser;
 use Utils\Data\ValidationEvent;
 use Utils\Data\ValidationForm;
@@ -39,11 +40,13 @@ class Recover extends Controller
     {
         if (Request::isPost()) {
             ValidationForm::isValidRecoveryEmailForm(Request::post());
+            $email = (new SystemRecovery())->submit(Request::post('email'));
 
-            $event = Event::factory(['email' => Request::post('email'), 'template' => ModelUserEvent::TEMPLATE_PASSWORD_RECOVERY]);
-            ValidationEvent::isEventNotExist($event);
-
-            (new SystemRecovery(Request::post('email')))->submit();
+            if (Request::isAjax()) Response::result(200, true, $email);
+            else {
+                header("Location: /recover/success/{$email}");
+                die;
+            }
         }
     }
 
@@ -70,20 +73,27 @@ class Recover extends Controller
         $code = Request::get('code');
         $this->set('code', $code);
 
-        if (empty($code)) $this->display('recover_code');
-        else {
-            $event = Event::factory(['code' => $code, 'template' => ModelUserEvent::TEMPLATE_PASSWORD_RECOVERY, 'active' => false]);
-            ValidationEvent::event($event);
-            ValidationUser::isValidActiveUser($event->getUser());
+        if (!empty($code)) {
+            $recoverEvent = Event::factory(['code' => $code, 'template' => ModelUserEvent::TEMPLATE_PASSWORD_RECOVERY, 'active' => false]);
+            ValidationEvent::event($recoverEvent);
+
+
 
             if (Request::isPost()) {
                 ValidationForm::isValidRecoveryPasswordForm(Request::post());
-                (new SystemRecovery($event->getUser()->getEmail()))->setUser($event->getUser())->setEvent($event)->recover();
+                $email = (new SystemRecovery())->recover($recoverEvent);
+
+                if (Request::isAjax()) Response::result(200, true, $email);
+                else {
+                    header("Location: /recover/finish/{$email}/");
+                    die;
+                }
             }
 
             if (Request::isAjax()) Response::result(200, true, $code);
             else $this->display('recover_password');
         }
+        $this->display('recover_code');
     }
 
     /**

@@ -9,7 +9,7 @@ use System\Request;
             <p class="text-muted">Enter the code into the form</p>
         </div>
 
-        <form action="/register/confirm/" method="get" class="needs-validation" id="confirm" novalidate>
+        <form action="/register/confirm/" id="confirm" method="get" class="needs-validation" novalidate>
             <!--        <input type="hidden" name="csrf" value="--><?php //= $this->csrf ?><!--">-->
 
             <div class="mb-3 login-block font-size-14">

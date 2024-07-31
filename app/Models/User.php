@@ -1,6 +1,7 @@
 <?php
 namespace Models;
 
+use Models\User\Session;
 use ReflectionException;
 use System\Auth;
 use System\Db;
@@ -21,6 +22,7 @@ class User extends Model
     const USER_NOT_CRYPT_KEY = 'Encryption keys weren\'t generated';
     const USER_NOT_WELCOME = 'Greeting wasn\'t sent';
     const USER_NOT_SENT_CONFIRM = 'Verification code wasn\'t sent';
+    const USER_NOT_SENT_VERIFY = 'Verification email wasn\'t sent';
     const USER_SOMETHING_WRONG = 'Something went wrong during registration';
     const USER_NOT_FOUND = 'User not found';
     const USER_NOT_ACTIVE = 'This user is not active';
@@ -251,10 +253,10 @@ class User extends Model
      */
     private static function getTokenByCookie(): ?string
     {
-        $session = EntityUser\Session::factory(['cookie' => $_COOKIE['user']]);
+        $session = Session::getByCookie($_COOKIE['user']);
 
-        if (!empty($session) && !empty($session->getToken())) {
-            $_SESSION['token'] = $session->getToken();
+        if (!empty($session) && !empty($session['token'])) {
+            $_SESSION['token'] = $session['token'];
             return self::getToken();
         }
         else {

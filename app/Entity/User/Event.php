@@ -18,6 +18,7 @@ class Event extends Entity
     private ?int $id = null;
     private bool $active = true;
     private ?User $user = null;
+    private ?string $email = null;
     private EventTemplate $eventTemplate;
     private ?string $code = null;
     private array $params;
@@ -33,11 +34,12 @@ class Event extends Entity
      * @param ?array $params - params
      * @throws ReflectionException
      */
-    public function __construct(int $templateId = ModelUserEvent::TEMPLATE_EMAIL_CONFIRM, ?User $user = null, ?array $params = [])
+    public function __construct(int $templateId = ModelUserEvent::TEMPLATE_EMAIL_CONFIRM, ?string $email = null, ?User $user = null, ?array $params = [])
     {
-        if (!empty($user)) $this->user = $user;
+        $this->user = $user ?: null;
+        $this->email = $email ?: $user ?-> getEmail();
         $this->eventTemplate = EventTemplate::factory(['id' => $templateId]);
-        $this->params = $params;
+        $this->params = $params + ['user_email' => $this->email];
         $this->expire = (new DateTime())->modify('+1 day');
         $this->created = new DateTime();
 
@@ -111,6 +113,17 @@ class Event extends Entity
     public function setUser(?User $user): Event
     {
         $this->user = $user;
+        return $this;
+    }
+
+    public function getEmail(): ?string
+    {
+        return $this->email;
+    }
+
+    public function setEmail(?string $email): Event
+    {
+        $this->email = $email;
         return $this;
     }
 

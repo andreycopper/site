@@ -24,6 +24,18 @@ class ValidationEvent extends Validation
     }
 
     /**
+     * Check event code
+     * @param ?string $code - code
+     * @return bool
+     * @throws UserException
+     */
+    public static function isValidCode(?string $code): bool
+    {
+        if (empty($code)) throw new UserException(ModelUserEvent::CODE_EMPTY);
+        return true;
+    }
+
+    /**
      * Check user event not exist
      * @param ?Event $event - event
      * @return bool

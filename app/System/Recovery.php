@@ -11,93 +11,48 @@ use Exceptions\MailException;
 use Models\User as ModelUser;
 use Exceptions\UserException;
 use Models\User\Event as ModelUserEvent;
+use Utils\Data\Handler;
+use Utils\Data\ValidationEvent;
 use Utils\Data\ValidationUser;
 
 class Recovery {
-    private ?string $email;
-    private ?User $user;
-    private ?Event $event;
-
-    /**
-     * @param ?string $email - email
-     */
-    public function __construct(?string $email = null)
-    {
-        $this->email = $email;
-    }
-
     /**
      * Send recovery code
-     * @return void
-     * @throws MailException|ReflectionException|UserException|DbException|ForbiddenException
+     * @param string $email - recovery email
+     * @return string
+     * @throws DbException|ForbiddenException|MailException|ReflectionException|UserException
      */
-    public function submit(): void
+    public function submit(string $email): string
     {
-        $this->user = User::factory(['email' => $this->email]);
-        ValidationUser::isValidActiveUser($this->user);
+        $email = Handler::toEmail($email);
+        $searchEvent = Event::factory(['email' => $email, 'template' => ModelUserEvent::TEMPLATE_PASSWORD_RECOVERY]);
+        ValidationEvent::isEventNotExist($searchEvent);
 
-        $this->event = new Event(ModelUserEvent::TEMPLATE_PASSWORD_RECOVERY, $this->user, ['user_email' => $this->email]);
-        if (!$this->event->send()) throw new UserException(ModelUser::USER_NOT_SENT_CONFIRM);
+        $user = User::factory(['email' => $email, 'active' => false]);
+        ValidationUser::isValidActiveUser($user);
 
-        if (Request::isAjax()) Response::result(200, true, $this->user->getEmail());
-        else {
-            header("Location: /recover/success/{$this->user->getEmail()}");
-            die;
-        }
+        $event = new Event(ModelUserEvent::TEMPLATE_PASSWORD_RECOVERY, $email, $user);
+        if (!$event->send()) throw new UserException(ModelUser::USER_NOT_SENT_CONFIRM);
+
+        return $user->getEmail();
     }
 
     /**
      * Recovery password
-     * @return void
-     * @throws MailException|ReflectionException|UserException
+     * @param Event $recoverEvent - recovery event
+     * @return string
+     * @throws DbException|ForbiddenException|MailException|ReflectionException|UserException
      */
-    public function recover(): void
+    public function recover(Event $recoverEvent): string
     {
+        ValidationUser::isValidActiveUser($recoverEvent->getUser());
+
         $date = new DateTime();
-        $this->user->setPassword(password_hash(Request::post('password'), PASSWORD_DEFAULT))->setUpdated($date)->save();
+        $recoverEvent->getUser()->setPassword(password_hash(Request::post('password'), PASSWORD_DEFAULT))->setUpdated($date)->save();
 
-        $recoverEvent = new Event(ModelUserEvent::TEMPLATE_PASSWORD_CHANGED, $this->user, ['user_email' => $this->email]);
-        $recoverEvent->send();
+        (new Event(ModelUserEvent::TEMPLATE_PASSWORD_CHANGED, $recoverEvent->getEmail(), $recoverEvent->getUser()))->send();
 
-        $this->event->setActive(false)->setUpdated($date)->save();
-
-        if (Request::isAjax()) Response::result(200, true, $this->user->getEmail());
-        else {
-            header("Location: /recover/finish/{$this->user->getEmail()}/");
-            die;
-        }
-    }
-
-    public function getEmail(): string
-    {
-        return $this->email;
-    }
-
-    public function setEmail(string $email): Recovery
-    {
-        $this->email = $email;
-        return $this;
-    }
-
-    public function getUser(): User
-    {
-        return $this->user;
-    }
-
-    public function setUser(User $user): Recovery
-    {
-        $this->user = $user;
-        return $this;
-    }
-
-    public function getEvent(): Event
-    {
-        return $this->event;
-    }
-
-    public function setEvent(Event $event): Recovery
-    {
-        $this->event = $event;
-        return $this;
+        $recoverEvent->setActive(false)->setUpdated($date)->save();
+        return $recoverEvent->getUser()->getEmail();
     }
 }
